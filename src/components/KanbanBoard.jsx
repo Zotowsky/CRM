@@ -6,16 +6,18 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import Column from './Column';
 import AddOrderForm from './AddOrderForm';
+import EditOrderModal from './EditOrderModal'; // <-- Импорт модалки
 import { supabase } from '../lib/supabase';
 
 const COLUMNS = [
   { id: 'new',         title: 'Новый',      color: 'bg-cherry' },
-  { id: 'in_progress', title: 'В работе',   color: 'bg-[#D4A373]' }, // Теплый акцент
+  { id: 'in_progress', title: 'В работе',   color: 'bg-[#D4A373]' },
   { id: 'done',        title: 'Завершён',   color: 'bg-matcha-dark' },
 ];
 
 export default function KanbanBoard() {
   const [orders, setOrders] = useState([]);
+  const [editingOrder, setEditingOrder] = useState(null); // <-- Стейт для редактирования
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -81,6 +83,11 @@ export default function KanbanBoard() {
 
   const handleAddOrder = (newOrder) => setOrders(prev => [...prev, newOrder]);
 
+  // Обновление после редактирования
+  const handleUpdateOrder = (updatedOrder) => {
+    setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto min-h-screen bg-matcha-light">
       <div className="flex items-center justify-between mb-6 border-b-2 border-matcha pb-4">
@@ -101,10 +108,20 @@ export default function KanbanBoard() {
               color={col.color}
               orders={orders.filter(o => o.status === col.id).sort((a, b) => a.position - b.position)}
               onArchive={handleArchive}
+              onEdit={(order) => setEditingOrder(order)} // <-- Передаем функцию открытия модалки
             />
           ))}
         </div>
       </DndContext>
+
+      {/* Само модальное окно рендерится здесь, поверх всего */}
+      {editingOrder && (
+        <EditOrderModal
+          order={editingOrder}
+          onClose={() => setEditingOrder(null)}
+          onUpdate={handleUpdateOrder}
+        />
+      )}
     </div>
   );
 }
